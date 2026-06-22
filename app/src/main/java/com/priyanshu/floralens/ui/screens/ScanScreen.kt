@@ -3,7 +3,9 @@ package com.priyanshu.floralens.ui.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -56,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -161,16 +164,17 @@ fun ScanScreen(viewModel: MainViewModel, onScanSaved: () -> Unit = {}) {
                 }
             }
 
-            // Plant Selection Dialog (for successful detections)
+            // Plant Selection Overlay (for successful detections)
             if (appState is AppState.AwaitingPlantSelection) {
-                PlantSelectionDialog(
+                PlantSelectionOverlay(
                     viewModel = viewModel,
-                    onSaved = onScanSaved
+                    onSaved = onScanSaved,
+                    modifier = Modifier.align(Alignment.TopCenter)
                 )
             }
 
-            // VineSnackbar for errors / low confidence only
-            val showSnackbar = appState is AppState.Result || appState is AppState.Error
+            // VineSnackbar for errors / low confidence or during plant selection
+            val showSnackbar = appState is AppState.Result || appState is AppState.Error || appState is AppState.AwaitingPlantSelection
             val errorMessage = when (val state = appState) {
                 is AppState.Result -> if (state.scanResult == null) state.classification.diseaseName else null
                 is AppState.Error -> state.message
@@ -178,6 +182,7 @@ fun ScanScreen(viewModel: MainViewModel, onScanSaved: () -> Unit = {}) {
             }
             val scanResult = when (val state = appState) {
                 is AppState.Result -> state.scanResult
+                is AppState.AwaitingPlantSelection -> state.scanResult
                 else -> null
             }
 
@@ -188,20 +193,25 @@ fun ScanScreen(viewModel: MainViewModel, onScanSaved: () -> Unit = {}) {
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
 
-            // Dismiss on tap
-            if (showSnackbar) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable { viewModel.dismissResult() }
-                )
+            // Intercept back presses to prevent accidental dismissal
+            var backPressTime by remember { mutableStateOf(0L) }
+            if (appState is AppState.AwaitingPlantSelection) {
+                BackHandler {
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - backPressTime < 2000) {
+                        viewModel.dismissResult()
+                    } else {
+                        backPressTime = currentTime
+                        Toast.makeText(context, "Press back again to discard diagnosis without saving", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun PlantSelectionDialog(viewModel: MainViewModel, onSaved: () -> Unit = {}) {
+fun PlantSelectionOverlay(viewModel: MainViewModel, onSaved: () -> Unit = {}, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val profiles by viewModel.plantProfiles.collectAsState()
     var showNewPlantInput by remember { mutableStateOf(false) }
@@ -218,152 +228,153 @@ fun PlantSelectionDialog(viewModel: MainViewModel, onSaved: () -> Unit = {}) {
 
     if (pendingPlantId != null) return // Auto-handled above
 
-    AlertDialog(
-        onDismissRequest = { viewModel.dismissResult() },
-        containerColor = CardSurface,
-        titleContentColor = FloraVibrant,
-        title = {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 48.dp, start = 16.dp, end = 16.dp)
+            .shadow(16.dp, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
+            .background(FloraTheme.colors.cardSurface)
+            .border(2.dp, FloraTheme.colors.cardBorder, RoundedCornerShape(24.dp))
+            .padding(20.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Filled.Eco,
                     contentDescription = null,
-                    tint = FloraVibrant,
+                    tint = FloraTheme.colors.floraVibrant,
                     modifier = Modifier.size(28.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (showNewPlantInput) "Name Your Plant" else "Save Scan",
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = FloraTheme.colors.floraVibrant,
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
-        },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                if (showNewPlantInput) {
-                    OutlinedTextField(
-                        value = customName,
-                        onValueChange = { customName = it },
-                        label = { Text("Plant Name", color = TextSecondary) },
-                        placeholder = { Text("e.g. Kitchen Tomato", color = TextSecondary.copy(alpha = 0.5f)) },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = FloraVibrant,
-                            unfocusedBorderColor = CardBorder,
-                            focusedLabelColor = FloraVibrant,
-                            cursorColor = FloraVibrant,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    // New plant button
-                    Button(
-                        onClick = { showNewPlantInput = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = FloraVibrant,
-                            contentColor = DeepForest
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("New Plant", fontWeight = FontWeight.Bold)
-                    }
+            Spacer(modifier = Modifier.height(16.dp))
 
-                    // Existing plants
-                    if (profiles.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Or add to existing:",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        LazyColumn(
-                            modifier = Modifier.height((profiles.size * 52).coerceAtMost(200).dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(profiles) { profile ->
-                                OutlinedButton(
-                                    onClick = {
-                                        viewModel.addToExistingPlant(context, profile.plantId)
-                                        onSaved()
-                                    },
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = FloraLight
-                                    ),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(44.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Eco,
-                                        contentDescription = null,
-                                        tint = FloraVibrant,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = profile.customName,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(
-                                        text = "${profile.scans.size} scans",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary
-                                    )
-                                }
+            if (showNewPlantInput) {
+                OutlinedTextField(
+                    value = customName,
+                    onValueChange = { customName = it },
+                    label = { Text("Plant Name", color = FloraTheme.colors.textSecondary) },
+                    placeholder = { Text("e.g. Kitchen Tomato", color = FloraTheme.colors.textSecondary.copy(alpha = 0.5f)) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = FloraTheme.colors.floraVibrant,
+                        unfocusedBorderColor = FloraTheme.colors.cardBorder,
+                        focusedLabelColor = FloraTheme.colors.floraVibrant,
+                        cursorColor = FloraTheme.colors.floraVibrant,
+                        focusedTextColor = FloraTheme.colors.textPrimary,
+                        unfocusedTextColor = FloraTheme.colors.textPrimary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    OutlinedButton(
+                        onClick = {
+                            showNewPlantInput = false
+                            customName = ""
+                        },
+                        border = androidx.compose.foundation.BorderStroke(1.dp, FloraTheme.colors.cardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = FloraTheme.colors.textSecondary)
+                    ) {
+                        Text("Back")
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Button(
+                        onClick = {
+                            if (customName.isNotBlank()) {
+                                viewModel.createNewPlant(context, customName.trim())
+                                onSaved()
+                            }
+                        },
+                        enabled = customName.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = FloraTheme.colors.floraVibrant,
+                            contentColor = FloraTheme.colors.deepForest
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Save", fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                // New plant button
+                Button(
+                    onClick = { showNewPlantInput = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = FloraTheme.colors.floraVibrant,
+                        contentColor = FloraTheme.colors.deepForest
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("New Plant", fontWeight = FontWeight.Bold)
+                }
+
+                // Existing plants
+                if (profiles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Or add to existing:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = FloraTheme.colors.textSecondary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    LazyColumn(
+                        modifier = Modifier.height((profiles.size * 52).coerceAtMost(200).dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(profiles) { profile ->
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.addToExistingPlant(context, profile.plantId)
+                                    onSaved()
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = FloraTheme.colors.floraLight
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, FloraTheme.colors.cardBorder),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Eco,
+                                    contentDescription = null,
+                                    tint = FloraTheme.colors.floraVibrant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = profile.customName,
+                                    modifier = Modifier.weight(1f),
+                                    color = FloraTheme.colors.textPrimary
+                                )
+                                Text(
+                                    text = "${profile.scans.size} scans",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = FloraTheme.colors.textSecondary
+                                )
                             }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            if (showNewPlantInput) {
-                Button(
-                    onClick = {
-                        if (customName.isNotBlank()) {
-                            viewModel.createNewPlant(context, customName.trim())
-                            onSaved()
-                        }
-                    },
-                    enabled = customName.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = FloraVibrant,
-                        contentColor = DeepForest
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Save", fontWeight = FontWeight.Bold)
-                }
-            }
-        },
-        dismissButton = {
-            OutlinedButton(
-                onClick = {
-                    if (showNewPlantInput) {
-                        showNewPlantInput = false
-                        customName = ""
-                    } else {
-                        viewModel.dismissResult()
-                    }
-                },
-                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
-            ) {
-                Text(if (showNewPlantInput) "Back" else "Cancel")
-            }
         }
-    )
+    }
 }
 
 @Composable
