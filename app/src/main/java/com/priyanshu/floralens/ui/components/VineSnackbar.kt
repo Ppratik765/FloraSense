@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.offset
@@ -61,7 +62,7 @@ fun VineSnackbar(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .padding(bottom = 56.dp) // Leave space for bottom nav
+            .navigationBarsPadding() // Dynamically handles 3-button or swipe nav
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             val canvasLineColor = YellowGreen
