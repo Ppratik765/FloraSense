@@ -20,9 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
-import com.priyanshu.floralens.ui.theme.CardSurface
-import com.priyanshu.floralens.ui.theme.FloraVibrant
-
+import androidx.compose.foundation.border
+import com.priyanshu.floralens.ui.theme.FloraTheme
 @Composable
 fun ThemeToggleButton(
     isLightMode: Boolean,
@@ -39,7 +38,8 @@ fun ThemeToggleButton(
         modifier = modifier
             .shadow(8.dp, CircleShape)
             .clip(CircleShape)
-            .background(CardSurface)
+            .background(FloraTheme.colors.cardSurface)
+            .border(2.dp, FloraTheme.colors.cardBorder, CircleShape)
             .clickable(onClick = onToggle)
             .padding(12.dp),
         contentAlignment = Alignment.Center
@@ -47,7 +47,7 @@ fun ThemeToggleButton(
         Icon(
             imageVector = if (isLightMode) Icons.Filled.LightMode else Icons.Filled.DarkMode,
             contentDescription = "Toggle Theme",
-            tint = FloraVibrant,
+            tint = FloraTheme.colors.floraVibrant,
             modifier = Modifier
                 .size(24.dp)
                 .rotate(rotation)

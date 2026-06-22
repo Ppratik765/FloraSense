@@ -65,7 +65,7 @@ class TFLiteImageClassifier(context: Context) {
         val maxIndex = probabilities.indices.maxByOrNull { probabilities[it] } ?: -1
         val maxProb = if (maxIndex != -1) probabilities[maxIndex] else 0f
 
-        return if (maxProb < 0.20f) {
+        return if (maxProb < 0.45f) {
             com.priyanshu.floralens.data.ClassificationResult(
                 diseaseName = "No clear plant detected. Please try again.",
                 confidence = maxProb,
