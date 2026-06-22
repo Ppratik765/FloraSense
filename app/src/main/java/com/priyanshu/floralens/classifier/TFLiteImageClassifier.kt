@@ -45,7 +45,7 @@ class TFLiteImageClassifier(context: Context) {
         return labels
     }
 
-    fun classify(bitmap: Bitmap): String {
+    fun classify(bitmap: Bitmap): com.priyanshu.floralens.data.ClassificationResult {
         val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 384, 384, true)
         val byteBuffer = convertBitmapToByteBuffer(resizedBitmap)
 
@@ -55,11 +55,26 @@ class TFLiteImageClassifier(context: Context) {
 
         val probabilities = softmax(output[0])
         val maxIndex = probabilities.indices.maxByOrNull { probabilities[it] } ?: -1
+        val maxProb = if (maxIndex != -1) probabilities[maxIndex] else 0f
 
-        return if (maxIndex != -1 && maxIndex < labels.size) {
-            formatLabel(labels[maxIndex])
+        return if (maxProb < 0.75f) {
+            com.priyanshu.floralens.data.ClassificationResult(
+                diseaseName = "No clear plant detected. Please try again.",
+                confidence = maxProb,
+                isPlantDetected = false
+            )
+        } else if (maxIndex != -1 && maxIndex < labels.size) {
+            com.priyanshu.floralens.data.ClassificationResult(
+                diseaseName = labels[maxIndex], // Let DiseaseDatabase format this later
+                confidence = maxProb,
+                isPlantDetected = true
+            )
         } else {
-            "Unknown Disease"
+            com.priyanshu.floralens.data.ClassificationResult(
+                diseaseName = "Unknown Disease",
+                confidence = maxProb,
+                isPlantDetected = false
+            )
         }
     }
 
@@ -98,18 +113,8 @@ class TFLiteImageClassifier(context: Context) {
         return exps
     }
 
-    private fun formatLabel(rawLabel: String): String {
-        val parts = rawLabel.split("___")
-        return if (parts.size == 2) {
-            val plant   = parts[0].replace("_", " ").trim()
-            val disease = parts[1].replace("_", " ").trim()
-            "$plant: $disease"
-        } else {
-            rawLabel.replace("_", " ").trim()
-        }
-    }
-
     fun close() {
         interpreter.close()
     }
 }
+

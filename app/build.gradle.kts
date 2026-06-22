@@ -58,6 +58,10 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.9.0-alpha04")
+
+
     // CameraX for the live feed
     val camerax_version = "1.3.1"
     implementation("androidx.camera:camera-core:${camerax_version}")
