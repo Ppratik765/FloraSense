@@ -59,7 +59,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
+import android.view.SoundEffectConstants
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -379,6 +383,8 @@ fun PlantSelectionOverlay(viewModel: MainViewModel, onSaved: () -> Unit = {}, mo
 
 @Composable
 fun DiagnoseFAB(isAnalyzing: Boolean, onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     val infiniteTransition = rememberInfiniteTransition(label = "FAB pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -391,7 +397,11 @@ fun DiagnoseFAB(isAnalyzing: Boolean, onClick: () -> Unit) {
     )
 
     FloatingActionButton(
-        onClick = onClick,
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            view.playSoundEffect(SoundEffectConstants.CLICK)
+            onClick()
+        },
         containerColor = FloraVibrant,
         contentColor = DeepForest,
         modifier = Modifier.scale(scale)

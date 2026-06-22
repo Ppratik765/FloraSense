@@ -21,6 +21,10 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.border
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
+import android.view.SoundEffectConstants
 import com.priyanshu.floralens.ui.theme.FloraTheme
 @Composable
 fun ThemeToggleButton(
@@ -28,6 +32,9 @@ fun ThemeToggleButton(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+
     val rotation by animateFloatAsState(
         targetValue = if (isLightMode) 180f else 0f,
         animationSpec = tween(800),
@@ -40,7 +47,11 @@ fun ThemeToggleButton(
             .clip(CircleShape)
             .background(FloraTheme.colors.cardSurface)
             .border(2.dp, FloraTheme.colors.cardBorder, CircleShape)
-            .clickable(onClick = onToggle)
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+                onToggle()
+            }
             .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {

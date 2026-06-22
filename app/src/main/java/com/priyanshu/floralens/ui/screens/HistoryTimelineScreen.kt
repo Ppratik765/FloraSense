@@ -40,7 +40,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
+import android.view.SoundEffectConstants
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -150,6 +154,8 @@ fun HistoryTimelineScreen(viewModel: MainViewModel, onPlantClick: (String) -> Un
 
 @Composable
 fun TimelineNode(profile: PlantProfile, onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     val sortedScans = profile.scans.sortedByDescending { it.timestamp }
     val dateFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
 
@@ -157,7 +163,11 @@ fun TimelineNode(profile: PlantProfile, onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(140.dp)
-            .clickable(onClick = onClick)
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+                onClick()
+            }
     ) {
         // Stacked image thumbnails
         Box(
