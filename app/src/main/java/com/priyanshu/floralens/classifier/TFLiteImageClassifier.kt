@@ -2,6 +2,7 @@ package com.priyanshu.floralens.classifier
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import org.tensorflow.lite.Interpreter
 import java.io.BufferedReader
 import java.io.FileInputStream
@@ -46,6 +47,14 @@ class TFLiteImageClassifier(context: Context) {
     }
 
     fun classify(bitmap: Bitmap): com.priyanshu.floralens.data.ClassificationResult {
+        if (!isLikelyPlant(bitmap)) {
+            return com.priyanshu.floralens.data.ClassificationResult(
+                diseaseName = "No clear plant detected. Please aim at a leaf.",
+                confidence = 0f,
+                isPlantDetected = false
+            )
+        }
+
         val byteBuffer = convertBitmapToByteBuffer(bitmap)
 
         // Output shape [1, 38]
@@ -84,6 +93,37 @@ class TFLiteImageClassifier(context: Context) {
                 isPlantDetected = false
             )
         }
+    }
+
+    private fun isLikelyPlant(bitmap: Bitmap): Boolean {
+        // Fast heuristic to reject non-plant objects (like laptops or mugs)
+        // by checking if at least 5% of the image falls into the organic plant hue spectrum (yellow to dark green)
+        val scaled = Bitmap.createScaledBitmap(bitmap, 64, 64, true)
+        val pixels = IntArray(64 * 64)
+        scaled.getPixels(pixels, 0, 64, 0, 0, 64, 64)
+
+        var organicPixels = 0
+        val hsv = FloatArray(3)
+
+        for (pixel in pixels) {
+            val r = (pixel shr 16) and 0xFF
+            val g = (pixel shr 8) and 0xFF
+            val b = pixel and 0xFF
+            Color.RGBToHSV(r, g, b, hsv)
+            val hue = hsv[0]
+            val sat = hsv[1]
+            val v = hsv[2]
+
+            // Organic plant matter: Hue between 20 (brown/yellow) and 160 (deep green)
+            if (hue in 20f..160f && sat > 0.12f && v > 0.15f) {
+                organicPixels++
+            }
+        }
+
+        if (scaled != bitmap) scaled.recycle()
+
+        val ratio = organicPixels.toFloat() / pixels.size
+        return ratio > 0.05f // Require at least 5% organic pixels
     }
 
     private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
