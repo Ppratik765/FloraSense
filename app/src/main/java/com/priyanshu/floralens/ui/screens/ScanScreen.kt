@@ -280,21 +280,17 @@ fun PlantSelectionOverlay(viewModel: MainViewModel, onSaved: () -> Unit = {}, mo
 
     if (pendingPlantId != null) return // Auto-handled above
 
-    Box(
+    androidx.compose.material3.Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .shadow(16.dp, RoundedCornerShape(24.dp))
-            .clip(RoundedCornerShape(24.dp))
-            .background(FloraTheme.colors.cardSurface)
-            .border(2.dp, FloraTheme.colors.cardBorder, RoundedCornerShape(24.dp))
+            .animateContentSize(animationSpec = tween(150)),
+        shape = RoundedCornerShape(24.dp),
+        color = FloraTheme.colors.cardSurface,
+        border = androidx.compose.foundation.BorderStroke(2.dp, FloraTheme.colors.cardBorder),
+        shadowElevation = 16.dp
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .animateContentSize(animationSpec = tween(150))
-                .padding(20.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Filled.Eco,
