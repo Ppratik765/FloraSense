@@ -79,8 +79,20 @@ fun CameraPreview(
                         .build()
                         .also {
                             it.setAnalyzer(cameraExecutor) { imageProxy: ImageProxy ->
-                                val bitmap = imageProxy.toBitmap()
-                                onImageCaptured(bitmap)
+                                val rawBitmap = imageProxy.toBitmap()
+                                val rotation = imageProxy.imageInfo.rotationDegrees.toFloat()
+                                val matrix = android.graphics.Matrix().apply { postRotate(rotation) }
+                                
+                                val rotatedBitmap = Bitmap.createBitmap(
+                                    rawBitmap, 0, 0, rawBitmap.width, rawBitmap.height, matrix, true
+                                )
+                                
+                                val size = Math.min(rotatedBitmap.width, rotatedBitmap.height)
+                                val x = (rotatedBitmap.width - size) / 2
+                                val y = (rotatedBitmap.height - size) / 2
+                                val centerSquare = Bitmap.createBitmap(rotatedBitmap, x, y, size, size)
+                                
+                                onImageCaptured(centerSquare)
                                 imageProxy.close()
                             }
                         }
