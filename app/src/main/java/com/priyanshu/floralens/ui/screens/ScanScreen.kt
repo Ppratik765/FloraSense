@@ -180,7 +180,7 @@ fun ScanScreen(viewModel: MainViewModel, onScanSaved: () -> Unit = {}) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = 16.dp, top = 24.dp)
-                    .animateContentSize(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow)),
+                    .animateContentSize(animationSpec = tween(150)),
                 verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Bottom)
             ) {
                 // Plant Selection Overlay (Only takes as much height as it needs)
@@ -284,6 +284,7 @@ fun PlantSelectionOverlay(viewModel: MainViewModel, onSaved: () -> Unit = {}, mo
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .animateContentSize(animationSpec = tween(150))
             .shadow(16.dp, RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
             .background(FloraTheme.colors.cardSurface)

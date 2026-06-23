@@ -123,7 +123,7 @@ class TFLiteImageClassifier(context: Context) {
         if (scaled != bitmap) scaled.recycle()
 
         val ratio = organicPixels.toFloat() / pixels.size
-        return ratio > 0.15f // Require at least 15% organic plant pixels
+        return ratio > 0.125f // Require at least 12.5% organic plant pixels
     }
 
     private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
