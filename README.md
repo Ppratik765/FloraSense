@@ -21,7 +21,7 @@ FloraLens bridges the gap between botanical sciences and modern mobile software 
 
 ## Live Demonstration
 
-*(A screen recording of the application's fluid, dynamic UI and real-time edge diagnostics will be uploaded here shortly.)*
+https://github.com/user-attachments/assets/7e1759ab-92d9-41bd-8cef-cedf2785a32a
 
 ---
 
