@@ -19,6 +19,12 @@ FloraLens bridges the gap between botanical sciences and modern mobile software 
 
 ---
 
+## Live Demonstration
+
+*(A screen recording of the application's fluid, dynamic UI and real-time edge diagnostics will be uploaded here shortly.)*
+
+---
+
 ## Project Architecture & Tree
 
 The project adheres strictly to the Unidirectional Data Flow (UDF) paradigm, built entirely in Kotlin and organized cleanly by feature and function.
